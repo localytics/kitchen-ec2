@@ -39,6 +39,7 @@ module Kitchen
       default_config :user_data,          nil
       default_config :iam_profile_name,   nil
       default_config :price,   nil
+      default_config :use_iam_profile,    false
       default_config :aws_access_key_id do |driver|
         ENV['AWS_ACCESS_KEY'] || ENV['AWS_ACCESS_KEY_ID']
       end
@@ -68,8 +69,6 @@ module Kitchen
       default_config :ssh_timeout, 1
       default_config :ssh_retries, 3
 
-      required_config :aws_access_key_id
-      required_config :aws_secret_access_key
       required_config :aws_ssh_key_id
       required_config :image_id
 
@@ -134,15 +133,32 @@ module Kitchen
 
       private
 
+      def aws_credentials
+        if config[:use_iam_profile]
+          {:use_iam_profile => true }
+        else
+          credentials = {}
+          [:aws_access_key_id, :aws_secret_access_key].each { |key| 
+            if !config.key?(key) or config[key].nil? or config[key].to_s.empty?
+              raise Kitchen::UserError, "Must provide #{key} or use IAM profile"
+            else
+              credentials[key] = config[key]
+            end
+          }
+
+          credentials
+        end
+      end
+
       def connection
-        Fog::Compute.new(
+        options = {
           :provider               => :aws,
-          :aws_access_key_id      => config[:aws_access_key_id],
-          :aws_secret_access_key  => config[:aws_secret_access_key],
           :aws_session_token      => config[:aws_session_token],
           :region                 => config[:region],
           :endpoint               => config[:endpoint],
-        )
+        }.merge(aws_credentials)
+
+        Fog::Compute.new(options)
       end
 
       def create_server

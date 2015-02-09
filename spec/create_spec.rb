@@ -124,4 +124,39 @@ describe Kitchen::Driver::Ec2 do
 
   end
 
+  context 'validation for AWS credentials' do
+
+    context 'IAM profile is not used' do
+      before do
+        config[:use_iam_profile] = false
+      end
+
+      it 'throws an error when aws key is missing' do
+        config[:aws_access_key_id] = ''
+        expect { driver.send(:aws_credentials) }.to raise_error(Kitchen::UserError)
+      end
+
+      it 'throws an error when aws secret is missing' do
+        config[:aws_secret_access_key] = ''
+        expect { driver.send(:aws_credentials) }.to raise_error(Kitchen::UserError)
+      end
+    end
+
+    context 'IAM profile is used' do
+      before do
+        config[:use_iam_profile] = true
+      end
+
+      it 'throws an error when aws key is missing' do
+        config[:aws_access_key_id] = ''
+        expect { driver.send(:aws_credentials) }.to_not raise_error
+      end
+
+      it 'throws an error when aws secret is missing' do
+        config[:aws_secret_access_key] = ''
+        expect { driver.send(:aws_credentials) }.to_not raise_error
+      end
+    end
+  end
+
 end
