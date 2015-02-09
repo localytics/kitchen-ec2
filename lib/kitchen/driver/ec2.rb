@@ -139,16 +139,16 @@ module Kitchen
             :use_iam_profile => true
           }
         else
+          credentials = {}
           [:aws_access_key_id, :aws_secret_access_key].each { |key| 
             if !config.key?(key) or config[key].nil? or config[key].to_s.empty?
               raise Kitchen::UserError, "Must provide #{key} or use IAM profile"
+            else
+              credentials[key] = config[key]
             end
           }
 
-          {
-            :aws_access_key_id => config[:aws_access_key_id],
-            :aws_secret_access_key => config[:aws_secret_access_key]
-          }
+          credentials
         end
       end
 
