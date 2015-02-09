@@ -69,11 +69,6 @@ module Kitchen
       default_config :ssh_timeout, 1
       default_config :ssh_retries, 3
 
-      if !config[:use_iam_profile]
-        required_config :aws_access_key_id
-        required_config :aws_secret_access_key
-      end
-
       required_config :aws_ssh_key_id
       required_config :image_id
 
@@ -138,19 +133,32 @@ module Kitchen
 
       private
 
+      def aws_credentials
+        if config[:use_iam_profile]
+          {
+            :use_iam_profile => true
+          }
+        else
+          [:aws_access_key_id, :aws_secret_access_key].each { |key| 
+            if !config.key?(key) or config[key].nil? or config[key].to_s.empty?
+              raise Kitchen::UserError, "Must provide #{key} or use IAM profile"
+            end
+          }
+
+          {
+            :aws_access_key_id => config[:aws_access_key_id],
+            :aws_secret_access_key => config[:aws_secret_access_key]
+          }
+        end
+      end
+
       def connection
         options = {
           :provider               => :aws,
           :aws_session_token      => config[:aws_session_token],
           :region                 => config[:region],
           :endpoint               => config[:endpoint],
-          :use_iam_profile        => config[:use_iam_profile]
-        }
-        
-        if !config[:use_iam_profile]
-          options[:aws_access_key_id] = config[:aws_access_key_id]
-          options[:aws_secret_access_key] = config[:aws_secret_access_key]
-        end
+        }.merge(aws_credentials)
 
         Fog::Compute.new(options)
       end
