@@ -135,9 +135,7 @@ module Kitchen
 
       def aws_credentials
         if config[:use_iam_profile]
-          {
-            :use_iam_profile => true
-          }
+          {:use_iam_profile => true }
         else
           credentials = {}
           [:aws_access_key_id, :aws_secret_access_key].each { |key| 
